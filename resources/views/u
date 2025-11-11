@@ -1,0 +1,968 @@
+@extends('layout')
+
+@section('title', $recipe->title . ' | Natural Skincare Community')
+
+@section('content')
+<div class="recipe-details-page">
+  
+  {{-- Breadcrumb --}}
+  <div class="container py-3">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="{{ route('home') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ route('recipes.index') }}">Recipes</a></li>
+        <li class="breadcrumb-item active">{{ Str::limit($recipe->title, 50) }}</li>
+      </ol>
+    </nav>
+  </div>
+
+  <div class="container py-4">
+    <div class="row g-4">
+      
+      {{-- Main Content --}}
+      <div class="col-lg-8">
+        
+        {{-- Recipe Header --}}
+        <div class="recipe-header-card">
+          <div class="recipe-header-content">
+            <div class="header-top">
+              <h1 class="recipe-main-title">{{ $recipe->title }}</h1>
+              <div class="header-actions">
+                <button class="action-button" onclick="shareRecipe()" title="Share">
+                  <i class="fas fa-share-alt"></i>
+                </button>
+                <button class="action-button favorite" onclick="toggleFavorite()" title="Save">
+                  <i class="far fa-heart"></i>
+                </button>
+              </div>
+            </div>
+
+            {{-- Recipe Meta Info --}}
+            <div class="recipe-quick-info">
+              <div class="info-item">
+                <i class="fas fa-clock"></i>
+                <div>
+                  <strong>{{ $recipe->preparation_time }} min</strong>
+                  <span>Prep Time</span>
+                </div>
+              </div>
+              <div class="info-item">
+                <i class="fas fa-signal"></i>
+                <div>
+                  <strong>{{ ucfirst($recipe->difficulty_level) }}</strong>
+                  <span>Difficulty</span>
+                </div>
+              </div>
+              <div class="info-item">
+                <i class="fas fa-user"></i>
+                <div>
+                  <strong>{{ $recipe->skinType->name ?? 'All Types' }}</strong>
+                  <span>Skin Type</span>
+                </div>
+              </div>
+              <div class="info-item">
+                <i class="fas fa-cookie-bite"></i>
+                <div>
+                  <strong>{{ $recipe->servings ?? 1 }}</strong>
+                  <span>Servings</span>
+                </div>
+              </div>
+            </div>
+
+            {{-- Tags --}}
+            <div class="recipe-tags-header">
+              @if($recipe->vegan ?? false)
+                <span class="tag tag-success">
+                  <i class="fas fa-leaf"></i> Vegan
+                </span>
+              @endif
+              @if($recipe->organic ?? false)
+                <span class="tag tag-success">
+                  <i class="fas fa-seedling"></i> Organic
+                </span>
+              @endif
+              @if($recipe->is_featured ?? false)
+                <span class="tag tag-warning">
+                  <i class="fas fa-star"></i> Featured
+                </span>
+              @endif
+            </div>
+          </div>
+
+          {{-- Recipe Image --}}
+          <div class="recipe-main-image">
+            <img src="{{ $recipe->image_url ?? 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=800' }}"
+                 alt="{{ $recipe->title }}">
+          </div>
+
+          {{-- Engagement Stats --}}
+          <div class="engagement-bar">
+            <div class="engagement-item">
+              <button class="engagement-btn" id="likeBtn" onclick="toggleLike()">
+                <i class="far fa-heart"></i>
+                <span id="likeCount">{{ $recipe->likes_count ?? 247 }}</span>
+              </button>
+            </div>
+            <div class="engagement-item">
+              <button class="engagement-btn" onclick="scrollToComments()">
+                <i class="far fa-comment"></i>
+                <span id="commentCount">{{ $recipe->comments_count ?? 89 }}</span>
+              </button>
+            </div>
+            <div class="engagement-item">
+              <span class="engagement-display">
+                <i class="fas fa-bookmark"></i>
+                <span>{{ $recipe->saves_count ?? 156 }}</span>
+              </span>
+            </div>
+            <div class="engagement-item">
+              <span class="engagement-display">
+                <i class="fas fa-eye"></i>
+                <span>{{ $recipe->views_count ?? 1247 }}</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {{-- Description --}}
+        <section class="content-section">
+          <h2 class="section-title">About This Recipe</h2>
+          <p class="section-text">{{ $recipe->description }}</p>
+        </section>
+
+        {{-- Ingredients --}}
+        <section class="content-section">
+          <h2 class="section-title">
+            <i class="fas fa-list-ul me-2"></i> Ingredients
+          </h2>
+          <div class="ingredients-list">
+            @foreach($recipe->ingredients as $ingredient)
+              <div class="ingredient-item">
+                <div class="ingredient-checkbox">
+                  <input type="checkbox" id="ingredient-{{ $loop->index }}">
+                  <label for="ingredient-{{ $loop->index }}"></label>
+                </div>
+                <div class="ingredient-details">
+                  <span class="ingredient-name">{{ $ingredient->name }}</span>
+                  <span class="ingredient-quantity">
+                    {{ $ingredient->pivot->quantity }} {{ $ingredient->pivot->measurement_unit }}
+                  </span>
+                </div>
+              </div>
+            @endforeach
+          </div>
+        </section>
+
+        {{-- Instructions --}}
+        <section class="content-section">
+          <h2 class="section-title">
+            <i class="fas fa-tasks me-2"></i> Instructions
+          </h2>
+          <div class="instructions-list">
+            @php
+              $steps = explode("\n", $recipe->instructions);
+            @endphp
+            @foreach($steps as $index => $step)
+              @if(trim($step))
+                <div class="instruction-step">
+                  <div class="step-number">{{ $index + 1 }}</div>
+                  <div class="step-content">
+                    <p>{{ trim($step) }}</p>
+                  </div>
+                </div>
+              @endif
+            @endforeach
+          </div>
+        </section>
+
+        {{-- Comments Section --}}
+        <section class="content-section" id="commentsSection">
+          <h2 class="section-title">
+            <i class="fas fa-comments me-2"></i> Community Feedback
+            <span class="comment-count-badge">{{ $recipe->comments_count ?? 89 }}</span>
+          </h2>
+
+          {{-- Add Comment --}}
+          <div class="add-comment-box">
+            <img src="https://ui-avatars.com/api/?name=You&background=random" 
+                 class="user-avatar" alt="You">
+            <form class="comment-form" onsubmit="postComment(event)">
+              <textarea class="comment-input" 
+                        placeholder="Share your experience with this recipe..." 
+                        rows="3" 
+                        required></textarea>
+              <div class="comment-form-footer">
+                <div class="comment-tools">
+                  <button type="button" class="tool-btn" title="Add emoji">
+                    <i class="far fa-smile"></i>
+                  </button>
+                  <button type="button" class="tool-btn" title="Attach image">
+                    <i class="far fa-image"></i>
+                  </button>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                  <i class="fas fa-paper-plane me-2"></i> Post Comment
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {{-- Comments List --}}
+          <div class="comments-list">
+            {{-- Sample Comment 1 --}}
+            <div class="comment-item">
+              <img src="https://ui-avatars.com/api/?name=Sarah+J&background=0D8ABC&color=fff" 
+                   class="user-avatar" alt="Sarah">
+              <div class="comment-content">
+                <div class="comment-header">
+                  <div>
+                    <strong class="commenter-name">Sarah Johnson</strong>
+                    <span class="commenter-badge">Verified</span>
+                  </div>
+                  <span class="comment-time">2 hours ago</span>
+                </div>
+                <p class="comment-text">
+                  This mask completely transformed my skin! I added a teaspoon of oatmeal for 
+                  extra exfoliation and it worked wonders. My skin feels so hydrated and glowing! ✨
+                </p>
+                <div class="comment-actions">
+                  <button class="comment-action-btn" onclick="likeComment(this)">
+                    <i class="far fa-thumbs-up"></i>
+                    <span>12</span>
+                  </button>
+                  <button class="comment-action-btn">
+                    <i class="fas fa-reply"></i> Reply
+                  </button>
+                </div>
+
+                {{-- Replies --}}
+                <div class="comment-replies">
+                  <div class="comment-item reply">
+                    <img src="https://ui-avatars.com/api/?name=Mike+T&background=00D4FF&color=fff" 
+                         class="user-avatar small" alt="Mike">
+                    <div class="comment-content">
+                      <div class="comment-header">
+                        <strong class="commenter-name">Mike Thompson</strong>
+                        <span class="comment-time">1 hour ago</span>
+                      </div>
+                      <p class="comment-text">
+                        Thanks for the oatmeal tip, Sarah! I'll definitely try that next time.
+                      </p>
+                      <div class="comment-actions">
+                        <button class="comment-action-btn" onclick="likeComment(this)">
+                          <i class="far fa-thumbs-up"></i>
+                          <span>3</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {{-- Sample Comment 2 --}}
+            <div class="comment-item">
+              <img src="https://ui-avatars.com/api/?name=Lisa+C&background=FF6B6B&color=fff" 
+                   class="user-avatar" alt="Lisa">
+              <div class="comment-content">
+                <div class="comment-header">
+                  <strong class="commenter-name">Lisa Chen</strong>
+                  <span class="comment-time">1 day ago</span>
+                </div>
+                <p class="comment-text">
+                  I have very sensitive skin and was hesitant to try this, but it worked beautifully! 
+                  No irritation at all. The honey really makes it soothing. 🍯
+                </p>
+                <div class="comment-actions">
+                  <button class="comment-action-btn" onclick="likeComment(this)">
+                    <i class="far fa-thumbs-up"></i>
+                    <span>8</span>
+                  </button>
+                  <button class="comment-action-btn">
+                    <i class="fas fa-reply"></i> Reply
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="text-center mt-4">
+            <button class="btn btn-outline-primary" onclick="loadMoreComments()">
+              <i class="fas fa-chevron-down me-2"></i> Load More Comments
+            </button>
+          </div>
+        </section>
+
+      </div>
+
+      {{-- Sidebar --}}
+      <div class="col-lg-4">
+        
+        {{-- Author Card --}}
+        <div class="sidebar-card author-card">
+          <h3 class="sidebar-card-title">Recipe by</h3>
+          <div class="author-info">
+            <img src="https://ui-avatars.com/api/?name={{ urlencode($recipe->author_name ?? 'Anonymous') }}&background=random&size=80"
+                 class="author-avatar-large" alt="Author">
+            <h4 class="author-name">{{ $recipe->author_name ?? 'Anonymous' }}</h4>
+            <p class="author-bio">Community Member</p>
+            <div class="author-stats">
+              <div class="stat">
+                <strong>24</strong>
+                <span>Recipes</span>
+              </div>
+              <div class="stat">
+                <strong>1.2k</strong>
+                <span>Followers</span>
+              </div>
+            </div>
+            <button class="btn btn-outline-primary btn-sm w-100">
+              <i class="fas fa-user-plus me-2"></i> Follow
+            </button>
+          </div>
+        </div>
+
+        {{-- Recipe Stats Card --}}
+        <div class="sidebar-card">
+          <h3 class="sidebar-card-title">Recipe Stats</h3>
+          <div class="stats-grid">
+            <div class="stat-box-sidebar">
+              <i class="fas fa-eye stat-icon text-info"></i>
+              <div>
+                <div class="stat-value">{{ $recipe->views_count ?? 1247 }}</div>
+                <div class="stat-label">Views</div>
+              </div>
+            </div>
+            <div class="stat-box-sidebar">
+              <i class="fas fa-heart stat-icon text-danger"></i>
+              <div>
+                <div class="stat-value">{{ $recipe->likes_count ?? 247 }}</div>
+                <div class="stat-label">Likes</div>
+              </div>
+            </div>
+            <div class="stat-box-sidebar">
+              <i class="fas fa-comment stat-icon text-primary"></i>
+              <div>
+                <div class="stat-value">{{ $recipe->comments_count ?? 89 }}</div>
+                <div class="stat-label">Comments</div>
+              </div>
+            </div>
+            <div class="stat-box-sidebar">
+              <i class="fas fa-bookmark stat-icon text-success"></i>
+              <div>
+                <div class="stat-value">{{ $recipe->saves_count ?? 156 }}</div>
+                <div class="stat-label">Saves</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {{-- Nutrition/Benefits Card --}}
+        <div class="sidebar-card">
+          <h3 class="sidebar-card-title">
+            <i class="fas fa-spa me-2"></i> Benefits
+          </h3>
+          <ul class="benefits-list">
+            <li><i class="fas fa-check-circle text-success"></i> Deep Hydration</li>
+            <li><i class="fas fa-check-circle text-success"></i> Anti-Aging Properties</li>
+            <li><i class="fas fa-check-circle text-success"></i> Natural Glow</li>
+            <li><i class="fas fa-check-circle text-success"></i> Soothes Irritation</li>
+          </ul>
+        </div>
+
+        {{-- Similar Recipes --}}
+        <div class="sidebar-card">
+          <h3 class="sidebar-card-title">Similar Recipes</h3>
+          <div class="similar-recipes">
+            @for($i = 0; $i < 3; $i++)
+              <a href="#" class="similar-recipe-item">
+                <img src="https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=200" alt="Recipe">
+                <div class="similar-recipe-info">
+                  <h5>Refreshing Cucumber Face Mask</h5>
+                  <div class="similar-recipe-meta">
+                    <span><i class="fas fa-clock"></i> 10 min</span>
+                    <span><i class="fas fa-star"></i> 4.8</span>
+                  </div>
+                </div>
+              </a>
+            @endfor
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+:root {
+  --primary: #4a7c59;
+  --primary-light: #e8f5e9;
+  --success: #28a745;
+  --info: #17a2b8;
+  --warning: #ffc107;
+  --danger: #dc3545;
+  --gray-100: #f8f9fa;
+  --gray-200: #e9ecef;
+  --gray-600: #6c757d;
+  --gray-900: #212529;
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+  --radius: 12px;
+}
+
+.recipe-details-page {
+  background: var(--gray-100);
+  min-height: 100vh;
+}
+
+.breadcrumb {
+  background: transparent;
+  padding: 0;
+  margin: 0;
+}
+
+.breadcrumb-item a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+/* Recipe Header Card */
+.recipe-header-card {
+  background: white;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.recipe-header-content {
+  padding: 2rem;
+}
+
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.recipe-main-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin: 0;
+  flex: 1;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.action-button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--gray-100);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  color: var(--gray-600);
+}
+
+.action-button:hover {
+  background: var(--primary);
+  color: white;
+  transform: scale(1.1);
+}
+
+.action-button.favorite.active {
+  background: var(--danger);
+  color: white;
+}
+
+.recipe-quick-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--gray-100);
+  border-radius: 8px;
+}
+
+.info-item i {
+  font-size: 1.5rem;
+  color: var(--primary);
+}
+
+.info-item strong {
+  display: block;
+  font-size: 1.125rem;
+  color: var(--gray-900);
+}
+
+.info-item span {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--gray-600);
+}
+
+.recipe-tags-header {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tag {
+  padding: 0.375rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.tag-success { background: #d4edda; color: #155724; }
+.tag-warning { background: #fff3cd; color: #856404; }
+
+.recipe-main-image {
+  width: 100%;
+  aspect-ratio: 16/9;
+  overflow: hidden;
+}
+
+.recipe-main-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.engagement-bar {
+  display: flex;
+  padding: 1rem 2rem;
+  border-top: 1px solid var(--gray-200);
+  gap: 2rem;
+}
+
+.engagement-item {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.engagement-btn {
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--gray-600);
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.engagement-btn:hover {
+  color: var(--primary);
+}
+
+.engagement-btn.active {
+  color: var(--danger);
+}
+
+.engagement-display {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--gray-600);
+  font-weight: 600;
+}
+
+/* Content Sections */
+.content-section {
+  background: white;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.comment-count-badge {
+  margin-left: auto;
+  background: var(--primary-light);
+  color: var(--primary);
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+}
+
+.section-text {
+  font-size: 1.125rem;
+  line-height: 1.8;
+  color: var(--gray-600);
+}
+
+/* Ingredients */
+.ingredients-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ingredient-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--gray-100);
+  border-radius: 8px;
+  transition: all 0.3s;
+}
+
+.ingredient-item:hover {
+  background: var(--primary-light);
+}
+
+.ingredient-checkbox {
+  position: relative;
+}
+
+.ingredient-checkbox input {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.ingredient-details {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ingredient-name {
+  font-weight: 500;
+  color: var(--gray-900);
+}
+
+.ingredient-quantity {
+  font-weight: 600;
+  color: var(--primary);
+}
+
+/* Instructions */
+.instructions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.instruction-step {
+  display: flex;
+  gap: 1rem;
+}
+
+.step-number {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.125rem;
+}
+
+.step-content p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--gray-600);
+}
+
+/* Comments */
+.add-comment-box {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: var(--gray-100);
+  border-radius: var(--radius);
+}
+
+.user-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.user-avatar.small {
+  width: 36px;
+  height: 36px;
+}
+
+.comment-form {
+  flex: 1;
+}
+
+.comment-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--gray-200);
+  border-radius: 8px;
+  resize: vertical;
+  font-family: inherit;
+  margin-bottom: 0.75rem;
+}
+
+.comment-input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.comment-form-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.comment-tools {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.tool-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--gray-600);
+  transition: all 0.3s;
+}
+
+.tool-btn:hover {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.comment-item {
+  display: flex;
+  gap: 1rem;
+}
+
+.comment-item.reply {
+  margin-left: 2rem;
+}
+
+.comment-content {
+  flex: 1;
+}
+
+.comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.commenter-name {
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+.commenter-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.125rem 0.5rem;
+  background: var(--primary-light);
+  color: var(--primary);
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.comment-time {
+  font-size: 0.875rem;
+  color: var(--gray-600);
+}
+
+.comment-text {
+  margin-bottom: 0.75rem;
+  line-height: 1.6;
+  color: var(--gray-600);
+}
+
+.comment-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.comment-action-btn {
+  background: none;
+  border: none;
+  padding: 0.375rem 0.75rem;
+  border-radius: 20px;
+  cursor: pointer;
+  color: var(--gray-600);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.comment-action-btn:hover {
+  background: var(--gray-100);
+  color: var(--primary);
+}
+
+.comment-action-btn.liked {
+  color: var(--primary);
+}
+
+.comment-replies {
+  margin-top: 1rem;
+  border-left: 2px solid var(--gray-200);
+  padding-left: 1rem;
+}
+
+/* Sidebar */
+.sidebar-card {
+  background: white;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.sidebar-card-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin-bottom: 1rem;
+}
+
+.author-info {
+  text-align: center;
+}
+
+.author-avatar-large {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  margin-bottom: 1rem;
+}
+
+.author-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.author-bio {
+  color: var(--gray-600);
+  margin-bottom: 1rem;
+}
+
+.author-stats {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 1rem;
+}
+
+.author-stats .stat {
+  text-align: center;
+}
+
+.author-stats strong {
+  display: block;
+  font-size: 1.25rem;
+  color: var(--gray-900);
+}
+
+.author-stats span {
+  font-size: 0.875rem;
+  color: var(--gray-600);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.stat-box-sidebar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--gray-100);
+  border-radius: 8px;
+}
+
+.stat-icon {
+  font-size: 1.5rem;
+}
+
+.stat-value {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--gray-600);
+}
+
+.benefits-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.benefits-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9375rem;
+  color: var(--
