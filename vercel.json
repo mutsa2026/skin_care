@@ -1,22 +1,5 @@
 {
   "version": 2,
   "buildCommand": "npm run build",
-  "outputDirectory": "public",
-  "framework": null,
-  "functions": {
-    "api/index.js": {
-      "memory": 1024,
-      "maxDuration": 30
-    }
-  },
-  "routes": [
-    {
-      "src": "/build/(.*)",
-      "dest": "/public/build/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/api/index.js"
-    }
-  ]
+  "outputDirectory": "public"
 }
