@@ -1,27 +1,11 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
+  "buildCommand": "npm run build && composer install --no-dev",
   "outputDirectory": "public",
-  "functions": {
-    "api/index.php": {
-      "runtime": "now-php@1.0.0"
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.php"
     }
-  },
-  "routes": [
-    {
-      "src": "/build/(.*)",
-      "dest": "/public/build/$1"
-    },
-    {
-      "src": "/public/(.*)",
-      "dest": "/public/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/api/index.php"
-    }
-  ],
-  "env": {
-    "APP_ENV": "production"
-  }
+  ]
 }
