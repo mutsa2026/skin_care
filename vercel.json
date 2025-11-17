@@ -1,11 +1,24 @@
 {
   "version": 2,
   "buildCommand": "npm run build",
-  "outputDirectory": "public",
-  "rewrites": [
+  "public": "public",
+  "functions": {
+    "public/**.php": {
+      "runtime": "vercel-php@0.6.1"
+    }
+  },
+  "routes": [
     {
-      "source": "/(.*)",
-      "destination": "/index.php"
+      "src": "^/build/(.*)",
+      "dest": "/public/build/$1"
+    },
+    {
+      "src": "^/public/(.*)",
+      "dest": "/public/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/public/index.php"
     }
   ]
 }
