@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RecipeController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\CommunityController;
+use App\Http\Controllers\GalleryController;
+use App\Http\Controllers\ContactController;
 
 /*
 |--------------------------------------------------------------------------
@@ -11,17 +13,27 @@ use App\Http\Controllers\CommunityController;
 |--------------------------------------------------------------------------
 */
 
-// Home Route
+// Home/Dashboard Route
 Route::get('/', function () {
-    return view('welcome');
+    return view('Dashboard');
 })->name('home');
 
-// Recipe Browsing Routes
-Route::get('/browse-recipes', [RecipeController::class, 'browse'])->name('recipes.browse');
+// Skin Faves Routes (formerly Browse Recipes)
+Route::get('/skin-faves', [RecipeController::class, 'browse'])->name('recipes.browse');
 Route::get('/recipes', [RecipeController::class, 'index'])->name('recipes.index');
 Route::get('/recipes/create', [RecipeController::class, 'create'])->name('recipes.create');
 Route::get('/recipes/{id}', [RecipeController::class, 'show'])->name('recipes.show');
 Route::get('/recipes/{id}/preview', [RecipeController::class, 'preview'])->name('recipes.preview');
+
+// Before & After Gallery Routes
+Route::get('/before-after-gallery', [GalleryController::class, 'index'])->name('gallery.before-after');
+Route::get('/gallery', [GalleryController::class, 'gallery'])->name('gallery.index');
+Route::post('/gallery/upload', [GalleryController::class, 'upload'])->name('gallery.upload');
+Route::get('/gallery/{id}', [GalleryController::class, 'show'])->name('gallery.show');
+
+// Contact Route
+Route::get('/contact', [ContactController::class, 'index'])->name('contact');
+Route::post('/contact', [ContactController::class, 'send'])->name('contact.send');
 
 // Community Engagement Routes
 Route::get('/community', [CommunityController::class, 'index'])->name('community.index');
@@ -33,6 +45,7 @@ Route::post('/comments/{id}/reply', [CommunityController::class, 'reply'])->name
 Route::prefix('api')->group(function () {
     Route::post('/recipes/{id}/favorite', [RecipeController::class, 'toggleFavorite']);
     Route::get('/recipes/{id}/preview', [RecipeController::class, 'getPreview']);
+    Route::post('/gallery/{id}/like', [GalleryController::class, 'like']);
 });
 
 /*
@@ -70,6 +83,19 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/recipes/{recipe}/edit', [AdminController::class, 'editRecipe'])->name('recipes.edit');
         Route::put('/recipes/{recipe}', [AdminController::class, 'updateRecipe'])->name('recipes.update');
         Route::delete('/recipes/{recipe}', [AdminController::class, 'deleteRecipe'])->name('recipes.destroy');
+
+        // Gallery Management
+        Route::get('/gallery', [AdminController::class, 'gallery'])->name('gallery');
+        Route::get('/gallery/create', [AdminController::class, 'createGallery'])->name('gallery.create');
+        Route::post('/gallery', [AdminController::class, 'storeGallery'])->name('gallery.store');
+        Route::get('/gallery/{galleryItem}/edit', [AdminController::class, 'editGallery'])->name('gallery.edit');
+        Route::put('/gallery/{galleryItem}', [AdminController::class, 'updateGallery'])->name('gallery.update');
+        Route::delete('/gallery/{galleryItem}', [AdminController::class, 'deleteGallery'])->name('gallery.destroy');
+
+        // Contact Management
+        Route::get('/contacts', [AdminController::class, 'contacts'])->name('contacts');
+        Route::get('/contacts/{contact}', [AdminController::class, 'showContact'])->name('contacts.show');
+        Route::delete('/contacts/{contact}', [AdminController::class, 'deleteContact'])->name('contacts.destroy');
 
         // Ingredient Management
         Route::get('/ingredients', [AdminController::class, 'ingredients'])->name('ingredients');

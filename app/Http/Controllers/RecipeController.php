@@ -77,7 +77,7 @@ class RecipeController extends Controller
 
         $totalRecipes = Recipe::count();
 
-        return view('browse-recipes', compact('recipes', 'skinTypes', 'categoryCounts', 'totalRecipes'));
+        return view('skin-faves', compact('recipes', 'skinTypes', 'categoryCounts', 'totalRecipes'));
     }
 
     public function index(Request $request)
@@ -104,7 +104,7 @@ class RecipeController extends Controller
         }
 
         // Return view for web browsing
-        return view('browse-recipes', compact('recipes', 'skinTypes'));
+        return view('skin-faves', compact('recipes', 'skinTypes'));
     }
 
     public function store(StoreRecipeRequest $request)
