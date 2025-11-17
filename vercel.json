@@ -1,20 +1,23 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
-  "outputDirectory": "public",
-  "public": "public",
+  "builds": [
+    {
+      "src": "public/index.php",
+      "use": "@vercel/php"
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/node"
+    }
+  ],
   "routes": [
     {
       "src": "^/build/(.*)",
-      "dest": "/public/build/$1"
+      "dest": "public/build/$1"
     },
     {
-      "src": "^/public/(.*)",
-      "dest": "/public/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/api/index.php"
+      "src": "(.*)",
+      "dest": "public/index.php"
     }
   ]
 }
